@@ -1,4 +1,5 @@
 import csv
+import logging
 from urllib.parse import urljoin
 
 from playwright.sync_api import Page
@@ -6,6 +7,8 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from app.config import BASE_URL
 from app.util import optional_text
+
+logger = logging.getLogger(__name__)
 
 
 def get_breadcrumbs(page: Page) -> dict:
@@ -96,16 +99,19 @@ def get_seller(page) -> dict | None:
 
 def get_prices(page: Page) -> dict:
     total_price = page.locator('[data-e2e="total-price-label"]').inner_text().strip()
-    main_price = page.locator('[data-e2e="main-price"]').inner_text().strip()
 
-    return {"total_price": total_price, "main_price": main_price}
+    main_price_locator = page.locator('[data-e2e="main-price"]')
+    reduced_price_locator = page.locator('[data-e2e="reduced-price"]')
 
+    if main_price_locator.count() > 0:
+        main_price = main_price_locator.inner_text().strip()
+    else:
+        main_price = reduced_price_locator.inner_text().strip()
 
-import logging
-
-from playwright.sync_api import Page
-
-logger = logging.getLogger(__name__)
+    return {
+        "total_price": total_price,
+        "main_price": main_price,
+    }
 
 
 def get_product_highlights(page: Page) -> dict:

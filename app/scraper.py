@@ -43,5 +43,6 @@ def scrape_balluff_products_links(page: Page, page_number: int, max_links: int |
 
 def scrape_product(page: Page, link: str) -> dict:
     navigate(page, link)
-    row = get_product_details(page)
-    return row
+    return get_product_details(page)
+    # row = get_product_details(page)
+    # return row
