@@ -1,3 +1,4 @@
+import csv
 from urllib.parse import urljoin
 
 from playwright.sync_api import Page
@@ -155,3 +156,72 @@ def get_technical_data(page: Page) -> dict[str, str]:
     return {
         " ".join(name.split()): " ".join(value.split()) for name, value in pairs if name and value
     }
+
+
+def get_product_description(page: Page):
+    product_description_title = page.locator("div #productDescription div h2").inner_text().strip()
+    product_description = (
+        page.locator(
+            "div #productDescription #descriptionTitle__productDescription .productDescription .text-body"
+        )
+        .inner_text()
+        .strip()
+    )
+    attributes_notes_title = optional_text(
+        page,
+        "#productDescriptionWrapper #attributesNotes_facts #descriptionTitle__attributesNotes_facts div h3",
+    )
+    DESCRIPTION_LI = (
+        "#productDescriptionWrapper #attributesNotes_facts "
+        "#descriptionTitle__attributesNotes_facts ul > li"
+    )
+    items = page.locator(DESCRIPTION_LI)
+    try:
+        items.first.wait_for(state="attached", timeout=3000)
+    except PlaywrightTimeoutError:
+        return {"Description": None}  # product without this list
+
+    texts = items.evaluate_all("els => els.map(el => el.textContent.trim())")
+    cleaned = [" ".join(t.split()) for t in texts if t.strip()]
+    return {
+        "description": {
+            product_description_title: product_description,
+            attributes_notes_title: " | ".join(cleaned) or None,
+        }
+    }
+
+
+def flatten_product(product: dict) -> dict:
+    flattened = {}
+
+    for key, value in product.items():
+        if isinstance(value, dict):
+            flattened.update(value)
+        else:
+            flattened[key] = value
+
+    return flattened
+
+
+def save_products(products):
+    if not products:
+        print("No products found.")
+        return
+
+    # Flatten nested dictionaries.
+    products = [flatten_product(product) for product in products]
+
+    # Collect all unique columns.
+    fieldnames = list(dict.fromkeys(key for product in products for key in product.keys()))
+
+    with open(
+        "balluff_products.csv",
+        "w",
+        newline="",
+        encoding="utf-8-sig",
+    ) as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(products)
+
+    print(f"Successfully saved {len(products)} products.")

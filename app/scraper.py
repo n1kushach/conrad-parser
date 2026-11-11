@@ -1,4 +1,3 @@
-import csv
 from urllib.parse import urljoin
 
 from playwright.sync_api import Page
@@ -42,11 +41,7 @@ def scrape_balluff_products_links(page: Page, page_number: int, max_links: int |
     return links
 
 
-def scrape_product(page: Page, link: str):
+def scrape_product(page: Page, link: str) -> dict:
     navigate(page, link)
     row = get_product_details(page)
-
-    with open("test.csv", "w", newline="", encoding="utf-8-sig") as f:
-        writer = csv.DictWriter(f, fieldnames=list(row.keys()))
-        writer.writeheader()
-        writer.writerow(row)  # writerow for a single dict, no list needed
+    return row
