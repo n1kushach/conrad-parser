@@ -1,8 +1,6 @@
-# Urls
 BASE_URL = "https://www.conrad.de"
 CATEGORY_URL = f"{BASE_URL}/de/o/naeherungssensoren-0231056.html"
-MAX_LINKS = 5
+MAX_LINKS = 20
 
-# Timeout in MS
-NAVIGATION_TIMEOUT = 60_000
-PRODUCT_TIMEOUT = 15_000
+NAVIGATION_TIMEOUT = 30000
+PRODUCT_TIMEOUT = 15000

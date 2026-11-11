@@ -2,9 +2,7 @@ from loguru import logger
 from playwright.sync_api import Page
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
-from app.product.parsers.parsers import (
-    get_prices,
-)
+from app.product.parsers import get_technical_data
 
 
 def _safe(fn, page: Page, default):
@@ -29,10 +27,10 @@ def get_product_details(page: Page, url: str | None = None) -> dict:
     # identifiers = get_identifiers(page)
     # stock = get_stock(page)
     # seller = get_seller(page) or {}
-    # specs = get_technical_data(page)
+    specs = get_technical_data(page)
 
     # prices = _safe(get_prices, page, {}) or {}
-    prices = get_prices(page)
+    # prices = get_prices(page)
     # breadcrumbs = _safe(get_breadcrumbs, page, {}).get("breadcrumbs") or []
     # highlights = _safe(get_product_highlights, page, {}) or {}
     # description = _safe(get_product_description, page, {}).get("description") or {}
@@ -49,7 +47,7 @@ def get_product_details(page: Page, url: str | None = None) -> dict:
         # "main_image": urljoin(BASE_URL, src) if src else None,
         # **identifiers,  # EAN, Hst.-Teile-Nr., Bestell-Nr.
         # **stock,  # Stock
-        **prices,  # total_price, main_price
+        # **prices,  # total_price, main_price
         # "seller": seller_name,
         # "seller_url": seller.get("href"),
         # "breadcrumbs": " > ".join(c["name"] or "" for c in breadcrumbs),
@@ -59,5 +57,5 @@ def get_product_details(page: Page, url: str | None = None) -> dict:
         # "datasheet_label": pdf_info.get("label"),
         # "datasheet_url": pdf_info.get("url"),
         # **{f"doc_{k}": v for k, v in documents.items()},
-        # **{f"spec_{k}": v for k, v in specs.items()},
+        **{f"spec_{k}": v for k, v in specs.items()},
     }

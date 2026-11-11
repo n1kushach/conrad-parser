@@ -147,20 +147,23 @@ def get_product_highlights(page: Page) -> dict:
 
 def get_technical_data(page: Page) -> dict[str, str]:
     rows = page.locator("#productTechData dl.productTechData__list")
+
     try:
         rows.first.wait_for(state="attached", timeout=5000)
     except PlaywrightTimeoutError:
-        return {}  # product without a technical data section
+        return {}
 
     pairs = rows.evaluate_all(
         """rows => rows.map(row => [
-            row.querySelector(':scope > dt')?.textContent.trim(),
-            row.querySelector(':scope > dd .productTechData__definitionDescription')?.textContent.trim(),
+            row.querySelector(':scope > dt')?.textContent,
+            row.querySelector(':scope > dd .productTechData__definitionDescription')?.textContent
         ])"""
     )
 
     return {
-        " ".join(name.split()): " ".join(value.split()) for name, value in pairs if name and value
+        " ".join(name.split()): " ".join(value.split())
+        for name, value in pairs
+        if name and value and name.strip() and value.strip()
     }
 
 
