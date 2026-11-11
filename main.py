@@ -1,9 +1,10 @@
 import os
 
 from dotenv import load_dotenv
-from playwright.sync_api import (
-    sync_playwright,
-)
+from loguru import logger
+from playwright.sync_api import Error as PlaywrightError
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+from playwright.sync_api import sync_playwright
 from seleniumbase import sb_cdp
 
 from app.config import MAX_LINKS
@@ -32,13 +33,15 @@ def main():
         all_products = []
         for index, link in enumerate(all_links, start=1):
             try:
-                print(f"\nProduct {index}/{len(all_links)}")
-
+                logger.info(f"\nProduct {index}/{len(all_links)}")
                 row = scrape_product(page, link)
                 all_products.append(row)
-
-            except Exception as e:
-                print(f"Error scraping {link}: {e}")
+            except PlaywrightTimeoutError:
+                logger.warning("Timeout on {}", link)
+            except PlaywrightError as e:
+                logger.error("Playwright error on {}: {}", link, e)
+            except (KeyError, ValueError, IndexError, TypeError, AttributeError) as e:
+                logger.error("Parse error on {} (layout changed?): {}", link, e)
 
         # Save all rows.
         save_products(all_products)

@@ -6,7 +6,6 @@ from playwright.sync_api import Page
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from app.config import BASE_URL
-from app.util import optional_text
 
 logger = logging.getLogger(__name__)
 
@@ -167,37 +166,50 @@ def get_technical_data(page: Page) -> dict[str, str]:
     }
 
 
-def get_product_description(page: Page):
-    product_description_title = page.locator("div #productDescription div h2").inner_text().strip()
-    product_description = (
+def get_product_description(page: Page) -> dict:
+    title = page.locator("div #productDescription div h2").first.inner_text(timeout=15000).strip()
+
+    # Wait for real text, not just for the element to exist
+    page.wait_for_function(
+        """() => document.querySelector(
+            'div #productDescription #descriptionTitle__productDescription .productDescription .text-body'
+        )?.textContent.trim()""",
+        timeout=15000,
+    )
+    body = (
         page.locator(
-            "div #productDescription #descriptionTitle__productDescription .productDescription .text-body"
+            "div #productDescription #descriptionTitle__productDescription "
+            ".productDescription .text-body"
         )
-        .inner_text()
+        .first.inner_text()
         .strip()
     )
-    attributes_notes_title = optional_text(
-        page,
-        "#productDescriptionWrapper #attributesNotes_facts #descriptionTitle__attributesNotes_facts div h3",
-    )
-    DESCRIPTION_LI = (
+
+    # Build the result first, so the optional part can never discard it
+    description = {title: body}
+
+    items = page.locator(
         "#productDescriptionWrapper #attributesNotes_facts "
         "#descriptionTitle__attributesNotes_facts ul > li"
     )
-    items = page.locator(DESCRIPTION_LI)
     try:
         items.first.wait_for(state="attached", timeout=3000)
     except PlaywrightTimeoutError:
-        return {"Description": None}  # product without this list
+        return {"description": description}  # no notes list: keep what we have
 
     texts = items.evaluate_all("els => els.map(el => el.textContent.trim())")
     cleaned = [" ".join(t.split()) for t in texts if t.strip()]
-    return {
-        "description": {
-            product_description_title: product_description,
-            attributes_notes_title: " | ".join(cleaned) or None,
-        }
-    }
+
+    notes_title = optional_text(
+        page,
+        "#productDescriptionWrapper #attributesNotes_facts "
+        "#descriptionTitle__attributesNotes_facts div h3",
+    )
+
+    if notes_title and cleaned:  # avoids a None key / blank CSV header
+        description[notes_title] = " | ".join(cleaned)
+
+    return {"description": description}
 
 
 def flatten_product(product: dict) -> dict:
@@ -221,7 +233,7 @@ def save_products(products):
     products = [flatten_product(product) for product in products]
 
     # Collect all unique columns.
-    fieldnames = list(dict.fromkeys(key for product in products for key in product.keys()))
+    fieldnames = list(dict.fromkeys(key for product in products for key in product))
 
     with open(
         "balluff_products.csv",
@@ -234,3 +246,10 @@ def save_products(products):
         writer.writerows(products)
 
     print(f"Successfully saved {len(products)} products.")
+
+
+def optional_text(page, css, timeout=3000):
+    try:
+        return " ".join(page.locator(css).first.inner_text(timeout=timeout).split())
+    except PlaywrightTimeoutError:
+        return None

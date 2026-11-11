@@ -1,17 +1,9 @@
 from loguru import logger
 from playwright.sync_api import Page
-from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from app.browser import click_if_present, login, navigate
 from app.config import CATEGORY_URL
 from app.scraper import scrape_balluff_products_links
-
-
-def optional_text(page, css, timeout=3000):
-    try:
-        return " ".join(page.locator(css).first.inner_text(timeout=timeout).split())
-    except PlaywrightTimeoutError:
-        return None
 
 
 def handle_initial_load(page: Page, email: str, password: str):
