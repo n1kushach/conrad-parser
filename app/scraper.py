@@ -1,5 +1,6 @@
 from urllib.parse import urljoin
 
+from loguru import logger
 from playwright.sync_api import Page
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
@@ -14,7 +15,7 @@ def scrape_balluff_products_links(page: Page, page_number: int, max_links: int |
         return []
 
     url = f"{CATEGORY_URL}?page={page_number}"
-    print(f"\nScraping page {page_number}: {url}")
+    logger.info(f"\nScraping page {page_number}: {url}")
 
     navigate(page, url)
 
@@ -23,7 +24,7 @@ def scrape_balluff_products_links(page: Page, page_number: int, max_links: int |
     try:
         titles.first.wait_for(state="visible", timeout=15000)
     except PlaywrightTimeoutError:
-        print(f"No product titles found on page {page_number}")
+        logger.error(f"No product titles found on page {page_number}")
         return []
 
     balluff = titles.filter(has=page.locator("span.font-bold", has_text="BALLUFF"))
@@ -35,16 +36,12 @@ def scrape_balluff_products_links(page: Page, page_number: int, max_links: int |
         if href:
             product_url = urljoin(BASE_URL, href)
             links.append(product_url)
-            print(f"BALLUFF: {product_url}")
+            logger.info(f"BALLUFF: {product_url}")
 
-    print(f"Found {len(links)} BALLUFF products on page {page_number}")
+    logger.info(f"Found {len(links)} BALLUFF products on page {page_number}")
     return links
 
 
 def scrape_product(page: Page, link: str) -> dict:
     navigate(page, link)
-    data = get_product_details(page)
-    print(data)
-    return data
-    # row = get_product_details(page)
-    # return row
+    return get_product_details(page)

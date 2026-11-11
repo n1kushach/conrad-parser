@@ -152,18 +152,51 @@ def get_technical_data(page: Page) -> dict[str, str]:
     except PlaywrightTimeoutError:
         return {}
 
+    # Wait until the row count stops growing, so we don't read a half-rendered table
+    previous = -1
+    for _ in range(10):
+        current = rows.count()
+        if current == previous:
+            break
+        previous = current
+        page.wait_for_timeout(300)
+
     pairs = rows.evaluate_all(
         """rows => rows.map(row => [
             row.querySelector(':scope > dt')?.textContent,
-            row.querySelector(':scope > dd .productTechData__definitionDescription')?.textContent
+            // every value block in the <dd>, not just the first
+            [...row.querySelectorAll(':scope > dd .productTechData__definitionDescription')]
+                .map(d => [...d.children].map(c => c.textContent.trim()).join(' ') || d.textContent.trim())
+                .filter(Boolean)
+                .join(' | '),
         ])"""
     )
 
-    return {
-        " ".join(name.split()): " ".join(value.split())
-        for name, value in pairs
-        if name and value and name.strip() and value.strip()
-    }
+    details: dict[str, str] = {}
+    dropped: list[str] = []
+    for name, value in pairs:
+        if not name or not name.strip():
+            continue
+        name, value = " ".join(name.split()), " ".join((value or "").split())
+        if not value:
+            dropped.append(name)
+            continue
+
+        key, suffix = name, 2
+        while key in details:  # same label twice: keep both
+            key = f"{name} ({suffix})"
+            suffix += 1
+        details[key] = value
+
+    if len(details) < previous:
+        logger.warning(
+            "Tech data: {} rows on page, {} extracted on {} (empty values: {})",
+            previous,
+            len(details),
+            page.url,
+            dropped,
+        )
+    return details
 
 
 def get_product_description(page: Page) -> dict:
@@ -226,7 +259,7 @@ def flatten_product(product: dict) -> dict:
 
 def save_products(products):
     if not products:
-        print("No products found.")
+        logger.error("No products found.")
         return
 
     # Flatten nested dictionaries.
@@ -245,7 +278,7 @@ def save_products(products):
         writer.writeheader()
         writer.writerows(products)
 
-    print(f"Successfully saved {len(products)} products.")
+    logger.info(f"Successfully saved {len(products)} products.")
 
 
 def optional_text(page, css, timeout=3000):
