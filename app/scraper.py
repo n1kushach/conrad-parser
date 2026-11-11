@@ -1,11 +1,15 @@
-from playwright.sync_api import TimeoutError as PlaywrightTimeoutError, Page
+import csv
 from urllib.parse import urljoin
-from app.config import CATEGORY_URL, BASE_URL
+
+from playwright.sync_api import Page
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
 from app.browser import navigate
-from app.parse_product import get_product_details
+from app.config import BASE_URL, CATEGORY_URL
+from app.product.details import get_product_details
 
 
-def scrape_balluff_products(page: Page, page_number: int, max_links: int | None = None):
+def scrape_balluff_products_links(page: Page, page_number: int, max_links: int | None = None):
     """Return BALLUFF product links from one page, stopping at max_links."""
     if max_links is not None and max_links <= 0:
         return []
@@ -23,9 +27,7 @@ def scrape_balluff_products(page: Page, page_number: int, max_links: int | None 
         print(f"No product titles found on page {page_number}")
         return []
 
-    balluff = titles.filter(
-        has=page.locator("span.font-bold", has_text="BALLUFF")
-    )
+    balluff = titles.filter(has=page.locator("span.font-bold", has_text="BALLUFF"))
 
     links = []
 
@@ -42,4 +44,9 @@ def scrape_balluff_products(page: Page, page_number: int, max_links: int | None 
 
 def scrape_product(page: Page, link: str):
     navigate(page, link)
-    print(get_product_details(page))
+    row = get_product_details(page)
+
+    with open("test.csv", "w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.DictWriter(f, fieldnames=list(row.keys()))
+        writer.writeheader()
+        writer.writerow(row)  # writerow for a single dict, no list needed

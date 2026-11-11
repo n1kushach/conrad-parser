@@ -1,13 +1,14 @@
-
 import os
+
 from dotenv import load_dotenv
 from playwright.sync_api import (
     sync_playwright,
 )
 from seleniumbase import sb_cdp
-from app.scraper import scrape_balluff_products, scrape_product
-from app.browser import click_if_present, navigate, login
-from app.config import CATEGORY_URL, MAX_LINKS
+
+from app.browser import click_if_present, login, navigate
+from app.config import CATEGORY_URL
+from app.scraper import scrape_product
 
 load_dotenv()
 
@@ -35,17 +36,11 @@ def main():
     sb = sb_cdp.Chrome()
 
     with sync_playwright() as p:
-        browser = p.chromium.connect_over_cdp(
-            sb.get_endpoint_url()
-        )
+        browser = p.chromium.connect_over_cdp(sb.get_endpoint_url())
 
         context = browser.contexts[0]
 
-        page = (
-            context.pages[0]
-            if context.pages
-            else context.new_page()
-        )
+        page = context.pages[0] if context.pages else context.new_page()
 
         # Open category page.
         navigate(page, f"{CATEGORY_URL}?page=1")
@@ -66,8 +61,12 @@ def main():
         # Login.
         login(page, email, password)
 
-        print(scrape_product(
-            page, "https://www.conrad.de/de/p/balluff-induktiver-sensor-bes0068-1-st-3416652.html"))
+        print(
+            scrape_product(
+                page,
+                "https://www.conrad.de/de/p/balluff-abstandssensor-induktiv-baw-m18mg-uac16f-s04g-k-baw0029-m18-x-1-nicht-buendig-analog-spannung-o-x-h-18-mm-x-65-3416817.html",
+            )
+        )
 
         # # Get last page number.
         # pagination = page.locator("ul.pagination__list")
@@ -85,7 +84,7 @@ def main():
         #         if len(unique_links) >= MAX_LINKS:
         #             break
 
-        #     links = scrape_balluff_products(page, n, 100)
+        #     links = scrape_balluff_products_links(page, n, 100)
         #     all_links.extend(links)
 
 

@@ -1,7 +1,10 @@
 from playwright.sync_api import (
-    TimeoutError as PlaywrightTimeoutError,
     Error as PlaywrightError,
 )
+from playwright.sync_api import (
+    TimeoutError as PlaywrightTimeoutError,
+)
+
 from app.config import NAVIGATION_TIMEOUT
 
 
@@ -9,11 +12,7 @@ def click_if_present(page, name=None, css=None, timeout=5000, sleep_after=2):
     """Click the first visible button (by name) or element (by CSS), if present."""
     label = name or css
 
-    target = (
-        page.locator(css)
-        if css
-        else page.get_by_role("button", name=name)
-    )
+    target = page.locator(css) if css else page.get_by_role("button", name=name)
 
     try:
         target = target.locator("visible=true").first
@@ -31,8 +30,7 @@ def click_if_present(page, name=None, css=None, timeout=5000, sleep_after=2):
 def navigate(page, url):
     """Navigate while handling interrupted navigation."""
     try:
-        page.goto(url, wait_until="domcontentloaded",
-                  timeout=NAVIGATION_TIMEOUT)
+        page.goto(url, wait_until="domcontentloaded", timeout=NAVIGATION_TIMEOUT)
     except PlaywrightError as e:
         print(f"Navigation warning: {e}")
         # Check whether navigation actually succeeded.
@@ -57,9 +55,7 @@ def login(page, email, password):
 
     password_input.fill(password)
 
-    page.locator(
-        '[data-faro-user-action-name="password-submit"]'
-    ).click()
+    page.locator('[data-faro-user-action-name="password-submit"]').click()
 
     page.wait_for_timeout(5000)
 

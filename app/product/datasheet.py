@@ -1,4 +1,5 @@
-from playwright.sync_api import Page, TimeoutError as PlaywrightTimeoutError
+from playwright.sync_api import Page
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 DATASHEET_BUTTON = "#pdp-datasheet-main-btn"
 
