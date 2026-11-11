@@ -1,5 +1,6 @@
 import csv
 import logging
+from datetime import datetime
 from urllib.parse import urljoin
 
 from playwright.sync_api import Page
@@ -268,8 +269,10 @@ def save_products(products):
     # Collect all unique columns.
     fieldnames = list(dict.fromkeys(key for product in products for key in product))
 
+    filename = f"conrad_parser_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+
     with open(
-        "balluff_products.csv",
+        filename,
         "w",
         newline="",
         encoding="utf-8-sig",

@@ -1,6 +1,6 @@
 BASE_URL = "https://www.conrad.de"
 CATEGORY_URL = f"{BASE_URL}/de/o/naeherungssensoren-0231056.html"
-MAX_LINKS = 10
+MAX_LINKS = 100
 
 NAVIGATION_TIMEOUT = 30000
 PRODUCT_TIMEOUT = 15000
